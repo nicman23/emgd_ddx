@@ -1,0 +1,137 @@
+#----------------------------------------------------------------------------
+# Filename: Makefile.include
+# $Revision: 1.4 $
+#----------------------------------------------------------------------------
+# Copyright (c) 2002-2013, Intel Corporation.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+# 
+#----------------------------------------------------------------------------
+
+###########################################################################
+#
+# This file contains the EGD Build system. Currently this consists of 2
+# parts. The EGD part and the X Server part. This is due to the fact that
+# there is no Xorg/XFree DDK to ease building across multiple X server
+# versions. In the future the XDDK part may be moved into an official
+# external project.
+#
+##########################################################################
+
+###########################################################################
+#
+# EGD Build system Developer Options
+# When including this file into a Makefile these variables may be used
+# to control the features provided by this build system.
+#
+# DIRS: A list of directories that should be recursively build. Either
+#   DIRS or SOURCES may be provided but not both.
+# SOURCES: A list of files that should be built from in the current directory.
+# LIB: A library name (with no extension) that will be created and will
+#   contain the objects defined by $(SOURCES)
+# APP: An application name that will be created and will contain the
+#   objects defined by $(SOURCES)
+# BUILD_OPTS: (Optional) Additional items added to the build command for
+#   $(SOURCES)
+# XFREE: The full path to the X server sources to build against. This is
+#  the full tree for monolithic sources (old style) and just the X server
+#  for the modular sources. The sources do not need to be built, except for
+#  XFree4.3 at this time.
+#
+# Advanced Options:
+# CC: The compiler to use. Defaults to gcc.
+# AR: The archiver to use. Defaults to ar.
+# CFLAGS: Override compiler optimizations with those provided.
+# LDFLAGS: Override linker flags with those provided.
+# PROJECT_VRB: Set to 1 to enable verbose builds.
+# PROJECT_OUTPUT_PATH: The full path that will be used to store the output.
+# PROJECT_INCLUDES: Include paths that will be added at the beginning of
+#   the include paths for $(SOURCES).
+# PROJECT_DEPENDS: Additional dependencies for the project that will cause
+#   $(SOURCES) to be rebuilt.
+# PROJECT_BUILD_OPTS: Optional build options used when building all objects.
+#
+# PROJET_BUILD_XDRIVER: Set to 1 to include rules for X server driver.
+#
+# PROJECT_SONAME: SONAME will be set to this value when building a driver.
+# PROJECT_RPATH: Library rpath will be set to this value when building a
+#   driver.
+###########################################################################
+
+
+
+
+ifneq ($(COVERAGE_BUILD), )
+CFLAGS := $(CFLAGS) -g -fprofile-arcs -ftest-coverage
+LDFLAGS := $(LDFLAGS) -fprofile-arcs -ftest-coverage
+endif
+
+
+include $(EGD_ROOT)/build/Makefile.common.include
+
+#
+# Note: This will someday live outside the tree. For now we just
+# use the EGD's environment vars to find it.
+#
+ifeq ($(origin XDDK_TYPE), undefined)
+include $(EGD_ROOT)/build/Makefile.XDDK.include
+
+all::
+	echo -e "$(GREEN)Using $(XDDK_TYPE)$(OFF)";
+endif
+
+###########################################################################
+#
+# Much of this Makefile is common with other Linux Hosted EGD build
+# environments. The common parts are included here.
+#
+###########################################################################
+include $(EGD_ROOT)/build/Makefile.linux.include
+
+###########################################################################
+#
+# The Rules in the common Linux Makefile use the INCLUDES and CFLAGS.
+# For X server builds we need to add some additional things into those
+# variables.
+#
+# NOTE: These include paths are fragile!
+# 1) X server includes must come before EGD's libdrm headers because
+#  old X server came with libdrm new ones use EGD version.
+# 2) /usr/include comes after EGD headers in case there is an old
+#  escape header installed.
+# 3) Xv headers are no longer in the X server tree and need to come
+#  from /usr/include so we can't remove it yet
+# 4) glx headers used to be in the X server but now are not and need
+#  to come from /usr/include.
+#
+###########################################################################
+INCLUDES := $(XDDK_INCLUDES) $(PROJECT_INCLUDES)
+ifeq ($(origin PROJECT_BUILD_XDRIVER), file)
+INCLUDES := $(XDDK_DRIVER_INCLUDES) $(INCLUDES)
+endif
+
+CFLAGS := $(CFLAGS) $(XDDK_FLAGS)
+
+##########################################################################
+#Xproto changed in Fedora 12, so set a flag to determine if
+#compiling with the older Xproto
+SHMSTR = $(wildcard /usr/include/X11/extensions/shmstr.h)
+ifeq ($(SHMSTR),/usr/include/X11/extensions/shmstr.h)
+        CFLAGS := $(CFLAGS) -DSHMSTR_EXISTS
+endif

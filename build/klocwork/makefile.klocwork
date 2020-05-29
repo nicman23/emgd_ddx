@@ -1,0 +1,90 @@
+#################################################################################
+# Filename: makefile.klocwork
+#--------------------------------------------------------------------------------
+# 
+# INTEL CONFIDENTIAL
+# Copyright (2002-2008) Intel Corporation All Rights Reserved.
+# The source code contained or described herein and all documents related to
+# the source code ("Material") are owned by Intel Corporation or its suppliers
+# or licensors. Title to the Material remains with Intel Corporation or its
+# suppliers and licensors. The Material contains trade secrets and proprietary
+# and confidential information of Intel or its suppliers and licensors. The
+# Material is protected by worldwide copyright and trade secret laws and
+# treaty provisions. No part of the Material may be used, copied, reproduced,
+# modified, published, uploaded, posted, transmitted, distributed, or
+# disclosed in any way without Intel's prior express written permission.
+# 
+# No license under any patent, copyright, trade secret or other intellectual
+# property right is granted to or conferred upon you by disclosure or
+# delivery of the Materials, either expressly, by implication, inducement,
+# estoppel or otherwise. Any license under such intellectual property rights
+# must be express and approved by Intel in writing.
+#
+#################################################################################
+# History:
+#
+# - initial creation
+#
+#################################################################################
+
+ifeq ($(origin EGD_ROOT), undefined)
+$(error IEGD_ROOT not defined)
+endif
+
+ifeq ($(origin KW_PROJECT), undefined)
+$(error KW_PROJECT not defined, please ensure the KW_PROJECT exist in KW Server)
+endif
+
+ifeq ($(origin KW_BUILDCMD), undefined)
+$(error KW_BUILDCMD not defined)
+endif
+
+#-------------------------------------------------------------------------------
+# KlocWork Macro Start
+#-------------------------------------------------------------------------------
+KW_SPEC           ?= $(KW_PROJECT).out
+KW_TABLE          ?= $(CURDIR)/kwtable/$(KW_PROJECT)
+KW_HOST           := pgles15.png.intel.com
+KW_PORT           := 1104
+_KW_BUILDPROJECT  := kwbuildproject
+_KW_ADMIN         := kwadmin
+_KW_INJECT        := kwinject
+#-------------------------------------------------------------------------------
+# KlocWork Macro End
+#-------------------------------------------------------------------------------
+	
+help:
+	@echo  ========Target==============================================
+	@echo  '  klocwork        - Run all three target below'
+	@echo  '    [KW_PROJECT]  - Klocwork project created on the server'	
+	@echo  '    [KW_BUILDCMD] - Command/Script to execute build'	
+	@echo  '  kw-inject       - Generate BuildSpec'
+	@echo  '    [KW_PROJECT]  - Klocwork project created on the server'
+	@echo  '    [KW_BUILDCMD] - Command/Script to execute build'
+	@echo  '    [KW_SPEC]     - Location of BuildSpec'	
+	@echo  '  kw-build        - Execute Klocwork Analysis'
+	@echo  '    [KW_PROJECT]  - Klocwork project created on the server'
+	@echo  '    [KW_SPEC]     - Location of BuildSpec'
+	@echo  '  kw-load         - Upload Klocwork Scanning Result'
+	@echo  '    [KW_PROJECT]  - Klocwork project created on the server'
+	@echo  '    [KW_TABLE]    - Location of Klocwork table'
+
+klocwork: kw-inject kw-build kw-load
+
+kw-inject:
+	@echo 'Executing $@'
+	$(_KW_INJECT) --variable EGD_ROOT=$(EGD_ROOT) --output $(KW_SPEC) $(KW_BUILDCMD)
+
+kw-build:
+	@echo 'Executing $@'
+	$(_KW_BUILDPROJECT) --verbose                               \
+	--buildspec-variable EGD_ROOT=$(EGD_ROOT)                 \
+	--force --tables-directory $(KW_TABLE)                      \
+	--project-host $(KW_HOST) --project-port $(KW_PORT)         \
+	$(KW_SPEC)
+
+kw-load:
+	@echo 'Executing $@'
+	$(_KW_ADMIN) --host $(KW_HOST) --port $(KW_PORT) --verbose  \
+	load --copy-sources                                         \
+	$(KW_PROJECT) $(KW_TABLE)

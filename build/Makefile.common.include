@@ -1,0 +1,130 @@
+#----------------------------------------------------------------------------
+# Filename: Makefile.include
+# $Revision: 1.2 $
+#----------------------------------------------------------------------------
+# Copyright (c) 2002-2013, Intel Corporation.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+# 
+#----------------------------------------------------------------------------
+# This is a common Makefile.include used on all OSs to check common
+# rules for the EGD Build system.
+#----------------------------------------------------------------------------
+
+RED = \033[31m
+GREEN = \033[32m
+BLUE = \033[34m
+OFF = \033[0m
+
+ifeq ($(origin EGD_ROOT), undefined)
+$(error EGD_ROOT environment variable is required for compilation)
+endif
+
+ifeq ($(origin LIB), file)
+ifeq ($(origin PROJECT_OUTPUT_PATH), undefined)
+$(error PROJECT_OUTPUT_PATH variable is required for compilation)
+endif
+ifeq ($(origin SOURCES), undefined)
+$(error SOURCES variable is required for compilation)
+endif
+ifeq ($(origin APP), file)
+$(error LIB and APP may not be used in the same file)
+endif
+ifeq ($(origin DRV), file)
+$(error LIB and DRV may not be used in the same file)
+endif
+endif
+
+ifeq ($(origin APP), file)
+ifeq ($(origin PROJECT_OUTPUT_PATH), undefined)
+$(error PROJECT_OUTPUT_PATH variable is required for compilation)
+endif
+ifeq ($(origin SOURCES), undefined)
+$(error SOURCES variable is required for compilation)
+endif
+ifeq ($(origin LIB), file)
+$(error APP and LIB may not be used in the same file)
+endif
+ifeq ($(origin DRV), file)
+$(error APP and DRV may not be used in the same file)
+endif
+endif
+
+ifeq ($(origin DRV), file)
+ifeq ($(origin PROJECT_OUTPUT_PATH), undefined)
+$(error PROJECT_OUTPUT_PATH variable is required for compilation)
+endif
+ifeq ($(origin SOURCES), undefined)
+$(error SOURCES variable is required for compilation)
+endif
+ifeq ($(origin APP), file)
+$(error DRV and APP may not be used in the same file)
+endif
+ifeq ($(origin LIB), file)
+$(error DRV and LIB may not be used in the same file)
+endif
+endif
+
+##########################################################################
+# Define some useful functions that can be used in makefiles
+# using the call function.
+##########################################################################
+
+# Get a DOS path, from a Unix (possibly cygwin) path
+# Usage: $(call dos, $(VAR))
+dos = $(subst /,\,$(patsubst /cygdrive/%/,%:,$(1)))
+
+# Get a UNIX path, from a DOS path
+# Usage: $(call unix, $(VAR))
+unix = $(subst \,/,$(1))
+
+# Get a path suitable for cleaning from a lib path
+# For instance, when objects are stored in obj_chk/foo.obj and obj_fre/foo.obj
+# a make clean would need to delete obj_*/foo.obj. This function gives that
+# wildcard path from either of the former paths.
+#
+# PROJECT_OUTPUT_PATH must be defined when this is called.
+# Usage: $(call cleanpath, $(VAR))
+ifeq ($(origin PROJECT_OUTPUT_NOSUFFIX), file)
+PROJECT_CLEAN_PATH := $(PROJECT_OUTPUT_PATH)
+else
+PROJECT_CLEAN_PATH := $(PROJECT_OUTPUT_PATH)*
+endif
+cleanpath = $(subst $(PROJECT_OUTPUT_PATH),$(PROJECT_CLEAN_PATH),$(1))
+
+# Read the contents of a file
+# Usage: $(call readfile, $(FILE))
+CAT ?= cat
+readfile = $(shell if [ -e $(1) ]; then $(CAT) $(1); fi)
+
+depfile = $(call readfile, $(dir $(firstword $(1)))/depend.txt)
+
+# Read Dependencies for a source files from a file of the same
+# name with .dep extension and generate dependency rules
+# Usage: $(call gendep, $(TARGET FILE), $(SOURCE FILES))
+gendep = $(eval $(1): $(strip $(call depfile, $(2))))
+
+##########################################################################
+# This disables most verbose build output.  If you want to see the verbose
+# output (like for the build server or for eclipse) then set the 
+# environment variable PROJECT_VRB to 1
+##########################################################################
+ifneq ($(PROJECT_VRB), 1)
+.SILENT:
+endif

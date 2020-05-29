@@ -1,0 +1,99 @@
+#----------------------------------------------------------------------------
+# Filename: Makefile.include
+# $Revision: 1.9.18.4 $
+#----------------------------------------------------------------------------
+# Copyright (c) 2002-2013, Intel Corporation.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+# 
+#----------------------------------------------------------------------------
+
+###########################################################################
+#
+# Koheo Build system User Options
+# The Following must be defined to use the Koheo build system to produce
+# Koheo drivers.
+#
+# EGD_ROOT: The full path to the root of the Koheo Tree
+#
+# Optional Items:
+# PROJECT_VRB: Setting this variable will output all build steps to standard
+#   out.
+#
+###########################################################################
+ifeq ($(findstring Makefile.gnu, $(MAKE)),)
+MAKE += --no-print-directory -f Makefile.gnu
+endif
+
+ifeq ($(origin OBJECTS), file)
+$(error OBJECTS has been replaced with SOURCES variable)
+endif
+
+ifeq ($(origin SOURCES), file)
+ifeq ($(origin DIRS), file)
+$(error SOURCES and DIRS may not exist in the same file)
+endif
+endif
+
+export PROJECT_ERR ?= 0
+export PROJECT_VRB ?= 0
+
+#
+# These Variables are defaults that are often overridden by the OS
+# Makefile.includes
+#
+BINDIR = /bin
+
+#
+# Rules that are used for ALL OSs and further modified by each OS
+# Note the double Colon to define such rules
+#
+all::
+	@if [ "$(EGD_TOPLEVEL)" != "" ]; then \
+		$(BINDIR)/echo -e \
+		"$(GREEN)Building $(EGD_TOPLEVEL)$(OFF)"; \
+	fi
+
+
+clean::
+	@if [ "$(EGD_TOPLEVEL)" != "" ]; then \
+		$(BINDIR)/echo -e \
+		"$(RED)Cleaning $(EGD_TOPLEVEL)$(OFF)"; \
+	fi; \
+	$(BINDIR)/echo -e "$(RED) Cleaning $(CURDIR)$(OFF)";
+
+package::
+	@if [ "$(EGD_TOPLEVEL)" != "" ]; then \
+		$(BINDIR)/echo -e \
+		"$(BLUE)Packaging $(EGD_TOPLEVEL)$(OFF)"; \
+	fi
+
+rpm::
+	@if [ "$(EGD_TOPLEVEL)" != "" ]; then \
+		$(BINDIR)/echo -e \
+		"$(BLUE)Generating RPM for $(EGD_TOPLEVEL)$(OFF)"; \
+	fi
+
+#
+# Rules that are used for ALL OSs unmodified
+#
+debug:
+	@export CONFIG_DEBUG=1; export IGD_DEBUG="-DCONFIG_DEBUG"; $(MAKE)
+
+include $(EGD_ROOT)/build/Makefile.drv.include

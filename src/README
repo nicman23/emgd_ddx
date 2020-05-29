@@ -1,0 +1,40 @@
+Experimental EMGD DDX driver.
+
+This is an experimental X server driver that uses KMS/GEM to interface
+with the kernel mode driver.  
+
+It provides the framework for embedded feature support but currently 
+only supports basic driver functions.
+
+
+Differences from the production EMGD DDX driver:
+
+1) Implements the new xf86 driver interfaces (XRandR 1.3+ support)
+2) Uses GEM/Intel buffer manager for buffer management
+3) Re-worked EMGD Escape API to remove most API's 
+4) No dependency on existing EMGD custom DRM IOCTL's
+5) No XRender acceleration (UXA is used for buffer management only)
+6) No support for EMGD config options. The options are parsed, but not used.
+
+
+Right now, this works (but is buggy) with the OTC kernel DRM code. It can be
+used to test/debug the EMGD KMS/GEM code.
+
+
+DRI2 is implemented and does work, but it requires a emgd_dri.so file. On
+my system I symlinked the i965_dri.so file to emgd_dri.so and this seems
+to work.  We'll probably need to change our dri2 code to look for OTC dri
+libraries.
+
+
+Changes to base to build DDX driver
+
+build/Makefile.XDDX.include
+  - Added new include paths for xf86 API's
+
+include/
+  - Added new include files for control API extension. 
+     - emgd_api.h
+	 - emgd_srvapi.h
+	 - emgd_apistr.h
+

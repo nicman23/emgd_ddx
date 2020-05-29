@@ -1,0 +1,168 @@
+#----------------------------------------------------------------------------
+# Filename: Makefile.XDDK.include
+# $Revision: 1.1.312.5 $
+#----------------------------------------------------------------------------
+# Copyright (c) 2002-2013, Intel Corporation.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+# 
+#----------------------------------------------------------------------------
+############################################################################
+#
+# X Server DDK
+#
+# This is a DDK for compiling the X server driver and extensions outside the
+# X tree.  This file used to be significantly more complicated when we
+# supported various versions of Xfree86, early Xorg, and modern Xorg.
+# Since we now only support modern Xorg, much of the complexity has
+# been removed.
+#
+# Inputs:
+#  XFREE: Points to the root of the Xorg source tree.
+#
+# Outputs:
+#  XDDK_INCLUDES: Include paths needed for X server libraries
+#  XDDK_DRIVER_INCLUDES: Additional include paths needed for X server
+#     drivers.
+#  XDDK_TYPE: A printable string that identifies the the X server version
+#     detected at $(XFREE).
+#
+# For building the easiest way is to just point XFREE at any type
+# of sources and this makefile will figure it out.
+############################################################################
+ifeq  ($(origin XFREE), undefined)
+	$(error No XFREE specified!)
+endif
+
+###########################################################################
+# XORG_VERSION_CURRENT is defined in xorg-server.h, which is
+# auto-generated from xorg-server.h.in when the configure script is
+# run on the source tree.  Generally EMGD should build against
+# distribution-provided source trees (which have already been configured
+# to the needs of the distribution), so xorg-server.h should exist.
+# However there are cases where we'd like to build EMGD against a "default"
+# configuration (e.g., when trying the build against the latest upstream
+# git tree).  In that case we'll scrape the version number from the
+# AC_INIT directive of the configure.ac and provide a default set of
+# configuration options.
+###########################################################################
+
+########################################################
+# Configured xorg source tree with xorg-server.h
+########################################################
+ifeq ($(origin XDDK_VERSION_INCLUDE), undefined)
+TEST = $(shell \
+     if [ -f $(XFREE)/xorg-server.h ]; \
+     then echo -n YES; fi )
+ifeq ($(TEST),YES)
+VERSION := $(shell awk '/define XORG_VERSION_CURRENT/ {print substr($$0, 29)}' \
+	$(XFREE)/xorg-server.h)
+export XDDK_TYPE := $(shell awk ' BEGIN {  \
+	print "Xorg-xserver-" int($(VERSION)/10000000) "." \
+	int(($(VERSION) % 10000000) / 100000) "." \
+	(($(VERSION) % 100000) / 1000) }')
+export XDDK_VERSION_INCLUDE = \
+       -include xorg-server.h
+endif
+endif
+
+ifndef XORG_VERSION_CURRENT
+#define XORG_VERSION_CURRENT XF86_VERSION_CURRENT
+endif
+
+#######################################################
+# Unconfigured xorg source tree (e.g., git tree)
+#######################################################
+ifeq ($(origin XDDK_VERSION_INCLUDE), undefined)
+TEST = $(shell \
+     if [ -f $(XFREE)/configure.ac ]; \
+     then echo -n YES; fi )
+ifeq ($(TEST),YES)
+VERSION := $(shell grep AC_INIT $(XFREE)/configure.ac | perl -ne 'printf "%d%02d%02d%03d", $$1, $$2, $$3, $$4 if /(\d+)\.(\d+)\.(\d+)\.(\d+),/')
+
+export XDDK_TYPE := $(shell awk ' BEGIN {  \
+	major = int($(VERSION)/10000000); \
+	minor = int(($(VERSION) % 10000000)/ 100000); \
+	patch = int(($(VERSION) % 100000) / 1000); \
+	snap = int($(VERSION) % 1000); \
+	print "Xorg-xserver-" major "." minor "." patch "." snap; \
+	}')
+export XDDK_VERSION_INCLUDE = \
+	-DXORG_VERSION_CURRENT=$(VERSION) \
+	-DCOMPOSITE \
+	-DDRI2 \
+	-DRANDR \
+	-DRENDER \
+	-DXV \
+	-DXSERVER_LIBPCIACCESS=1 \
+
+endif
+endif
+
+
+###########################################################################
+#
+# The include paths for the X server driver have changed over time. Check
+# the location of the xf86.h file to determine which style of includes
+# we need to use.
+#
+###########################################################################
+
+ifeq ($(origin XDDK_INCLUDES), undefined)
+TEST = $(shell \
+     if [ -f $(XFREE)/hw/xfree86/common/xf86.h ]; \
+     then echo YES; fi )
+ifeq ($(TEST),YES)
+export XDDK_INCLUDES = \
+	-I$(XFREE)/hw/xfree86 \
+	-I$(XFREE)/hw/xfree86/common \
+	-I$(XFREE)/hw/xfree86/os-support \
+	-I$(XFREE)/hw/xfree86/os-support/bus \
+	-I$(XFREE)/include \
+	$(XDDK_EXTRA_INCLUDE) \
+	$(XDDK_VERSION_INCLUDE)
+
+
+export XDDK_DRIVER_INCLUDES = \
+	-I$(XFREE)/render \
+	-I$(XFREE)/mi \
+	-I$(XFREE)/fb \
+	-I$(XFREE)/Xext \
+	-I$(XFREE)/randr \
+	-I$(XFREE)/hw/xfree86/xaa \
+	-I$(XFREE)/hw/xfree86/ramdac \
+	-I$(XFREE)/hw/xfree86/shadowfb \
+	-I$(XFREE)/hw/xfree86/dri2 \
+	-I$(XFREE)/hw/xfree86/ddc \
+	-I$(XFREE)/hw/xfree86/i2c \
+	-I$(XFREE)/hw/xfree86/modes \
+	-I$(XFREE)/hw/xfree86/parser \
+	-I$(XFREE)/miext/damage \
+	$(XDDK_EXTRA_INCLUDE)
+
+endif
+endif
+
+ifeq ($(origin XDDK_TYPE), undefined)
+$(error Makefile.XDDK.include could not determine X server version from $$XFREE)
+endif
+
+#####################################################################
+# End of XDDK
+#####################################################################

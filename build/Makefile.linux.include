@@ -1,0 +1,220 @@
+#----------------------------------------------------------------------------
+# Filename: Makefile.linux.include
+# $Revision: 1.3.100.6 $
+#----------------------------------------------------------------------------
+# Copyright (c) 2002-2013, Intel Corporation.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+# 
+#----------------------------------------------------------------------------
+#
+# This Makefile contains the common components that are used on all Linux
+# hosted EGD build environments.
+#
+#----------------------------------------------------------------------------
+
+PROJECT_INCLUDES := $(addprefix -I,$(PROJECT_INCLUDES))
+PROJECT_LIBS := $(addsuffix .a,$(PROJECT_LIBS))
+
+# Only one of DRV APP LIB will exist
+PROJECT_OBJECT_PATH := $(PROJECT_OUTPUT_PATH)/obj_$(DRV)$(APP)$(LIB)
+
+vpath %.o $(PROJECT_OBJECT_PATH)
+vpath %.a $(PROJECT_OUTPUT_PATH)
+
+###################################################################
+#
+# Convert the outputs (LIB, APP, DRV, OBJECTS) to be full paths
+#
+###################################################################
+ifeq ($(origin LIB), file)
+LIB := $(PROJECT_OUTPUT_PATH)/$(LIB).a
+endif
+
+ifeq ($(origin APP), file)
+APP := $(PROJECT_OUTPUT_PATH)/$(APP)
+endif
+
+ifeq ($(origin DRV), file)
+DRV := $(PROJECT_OUTPUT_PATH)/$(DRV).so
+endif
+
+ifeq ($(origin SOURCES), file)
+OBJECTS := $(addsuffix .o,$(addprefix $(PROJECT_OBJECT_PATH)/,$(basename $(SOURCES))))
+endif
+
+#####################################################################
+#
+# OS and Toolchain flags for compiles
+#
+#####################################################################
+ifeq ($(origin XFREE_4_3), undefined) 
+PIC_FLAGS=-fPIC -DPIC -pthread
+endif
+
+PROJECT_BUILD_OPTS := -Wall -Wstrict-prototypes $(PIC_FLAGS)\
+	-fno-strict-aliasing -pipe \
+	$(PROJECT_BUILD_OPTS)
+
+CC ?= gcc
+
+#
+# There are a few cases when building:
+#  * 32-bit machine:  "uname -m" reports i686.  Can only build 32-bit
+#    binaries.  Passing -m32 in CFLAGS is unnecessary, but harmless.
+#  * 64-bit machine, standard:  "uname -m" depends on whether we've run
+#    "linux32" (or equivalent) before building or not.  Can build 32-bit
+#    or 64-bit binaries depending on "-m" flag (assuming proper dev
+#    packages are installed for cross-compilation).
+#
+# We'll use "uname -m" to determine how to compile.  If we get "i686"
+# we'll pass "-m32" to gcc to ensure that we explicitly build 32-bit
+# binaries, even if it's really a 64-bit machine.  If we get "x86_64"
+# we'll add -m64 (which would have been the default anyway).
+#
+# Developers and the build team will control what kind of binaries
+# they want on a 64-bit machine by running "linux32" when they want
+# 32-bit binaries.
+#
+ifeq ($(shell uname -m), x86_64)
+	ARCH_FLAGS = -m64
+else
+	ARCH_FLAGS = -m32
+endif
+
+ifeq ($(origin IGD_DEBUG), undefined)
+CFLAGS ?= -O2 -fomit-frame-pointer -fPIE -fPIC -D_FORTIFY_SOURCE=2
+LDFLAGS := $(LDFLAGS) -fPIC -pie -fstack-protector
+else
+CFLAGS ?= -g
+endif
+
+ifneq ($(origin BUILD_DEPENDENCIES), undefined)
+	PC_CFLAGS := $(shell pkg-config --cflags $(BUILD_DEPENDENCIES))
+	PC_LDFLAGS := $(shell pkg-config --libs $(BUILD_DEPENDENCIES))
+endif
+
+INCLUDES := $(PROJECT_INCLUDES)
+CFLAGS   := $(IGD_DEBUG) $(BUILD_OPTS) $(CFLAGS) $(ARCH_FLAGS) $(PROJECT_BUILD_OPTS) $(PC_CFLAGS)
+LDFLAGS  := $(LDFLAGS) $(ARCH_FLAGS) $(PC_LDFLAGS)
+
+ifeq ($(origin PROJECT_SONAME), file)
+LDFLAGS := $(LDFLAGS) -Wl,-soname,$(PROJECT_SONAME)
+endif
+
+ifeq ($(origin PROJECT_RPATH), file)
+LDFLAGS := $(LDFLAGS) -Wl,--rpath,$(PROJECT_RPATH)
+endif
+
+DEPENDS  := $(HEADERS) $(PROJECT_DEPENDS)
+
+
+###################################################################
+#
+# Rules: These may be extended from the toplevel Makefile.include
+# and may in tern be futher extended when SOURCES and LIBS are being built.
+#
+###################################################################
+
+# This one has no deps so that we can decend the tree first and
+# then build the libraries.
+all::
+	for x in $(DIRS); do if ! $(MAKE) -C $$x; then \
+		exit $(PROJECT_ERR); fi; done;
+
+all:: $(OBJECTS) $(LIB) $(APP) $(DRV)
+
+clean::
+	for x in $(DIRS); do $(MAKE) -C $$x clean; done
+	rm -f *~ *.o *.log
+
+install::
+	for x in $(DIRS); do $(MAKE) -C $$x install; done
+
+
+###################################################################
+# Additional and expanded rules when making OBJECTS
+###################################################################
+ifeq ($(origin SOURCES), file)
+$(PROJECT_OBJECT_PATH)/%.o: %.c $(DEPENDS)
+	echo -e "$(GREEN) Compiling $(CURDIR)/$< $(OFF)"
+	if [ ! -d $(PROJECT_OBJECT_PATH) ]; then \
+	   mkdir -p $(PROJECT_OBJECT_PATH); fi
+	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o$@
+	if [ "x$(LIB)" != "x" ]; then touch $(LIB).needed; fi
+
+
+clean::
+	rm -f $(OBJECTS)
+	if [ -d $(PROJECT_OBJECT_PATH) ]; then \
+		TEST=`ls -1A $(PROJECT_OBJECT_PATH)`; \
+		if [ "x$$TEST" = "x" ]; then \
+			rmdir $(PROJECT_OBJECT_PATH); \
+		fi; \
+	fi
+
+endif
+
+###################################################################
+# Additional and expanded rules when making LIB
+###################################################################
+ifeq ($(origin LIB), file)
+
+#
+# Note: You cannot do a regular dependency check on the lib because
+# the timestamps on the just-built objects may be less than one second
+# old. Instead we build the library whenever the <libname>.needed
+# file exists and then remove the file.
+#
+.PHONY: $(LIB)
+$(LIB)::
+	if [ -f $(LIB).needed ]; then \
+		echo -e "$(GREEN) Linking $@ $(OFF)"; \
+		$(AR) ru  $@ $(OBJECTS) 1>/dev/null 2>/dev/null; \
+		rm -f $(LIB).needed; \
+	fi
+
+clean::
+	rm -f $(LIB)
+	rm -rf $(PROJECT_OBJECT_PATH)
+
+endif
+
+ifeq ($(origin APP), file)
+
+$(APP)::$(OBJECTS)
+	echo -e "$(GREEN) Compiling $@ $(OFF)"
+	$(CC) $(CFLAGS) $(INCLUDES) $< -o$@
+
+clean::
+	echo -e "$(RED) Cleaning $(APP) $(OFF)"
+	rm -f $(APP)
+
+endif
+
+
+ifeq ($(origin DRV), file)
+$(DRV): $(OBJECTS)
+	echo -e "$(GREEN) Compiling $@ $(OFF)"
+	$(CC) -shared -o $@ $(OBJECTS) -static $(PROJECT_LIBS) $(LDFLAGS)
+	if [ "x$(IGD_DEBUG)" = "x" ]; then \
+		strip -x $@; \
+	fi
+
+endif

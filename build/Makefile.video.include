@@ -1,0 +1,93 @@
+#----------------------------------------------------------------------------
+# Filename: Makefile.include
+# $Revision: 1.2 $
+#----------------------------------------------------------------------------
+# Copyright (c) 2002-2013, Intel Corporation.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+# 
+#----------------------------------------------------------------------------
+
+###########################################################################
+#
+# This file contains the EGD Build system for Linux Userspace components
+#
+##########################################################################
+
+###########################################################################
+#
+# OAL Build system Developer Options
+# When including this file into a Makefile these variables may be used
+# to control the features provided by this build system.
+#
+# DIRS: A list of directories that should be recursively build. Either
+#   DIRS or OBJECTS may be provided but not both.
+# OBJECTS: A list of files with a .o extension that should be built from
+#   *.c files in the current directory.
+# LIB: A library name (with no extension) that will be created and will
+#   contain the objects defined by $(OBJECTS)
+# APP: An application name that will be created and will contain the
+#   objects defined by $(OBJECTS)
+# HEADERS: (Optional) Dependency header files for $(OBJECTS)
+# BUILD_OPTS: (Optional) Additional items added to the build command for
+#   $(OBJECTS)
+#
+# Advanced Options:
+# CC: The compiler to use. Defaults to gcc.
+# AR: The archiver to use. Defaults to ar.
+# CFLAGS: Override compiler optimizations with those provided.
+# LDFLAGS: Override linker flags with those provided.
+# PROJECT_VERBOSE: Set to 1 to enable verbose builds.
+# PROJECT_OUTPUT_PATH: The full path that will be used to store the output
+#  of the build. Objects are stored in a subdirectory for each DRV APP or
+#  LIB.
+# PROJECT_INCLUDES: Include paths that will be added at the beginning of
+#   the include paths for $(OBJECTS).
+# PROJECT_DEPENDS: Additional dependencies for the project that will cause
+#   $(OBJECTS) to be rebuilt.
+# PROJECT_BUILD_OPTS: Optional build options used when building all objects.
+###########################################################################
+
+include $(EGD_ROOT)/build/Makefile.common.include
+
+###########################################################################
+#
+# Much of this Makefile is common with other Linux Hosted EGD build
+# environments. The common parts are included here.
+#
+###########################################################################
+include $(EGD_ROOT)/build/Makefile.linux.include
+
+
+###########################################################################
+#
+# The Rules from the common Linux Makefile require INCLUDES, CFLAGS,
+# 
+###########################################################################
+INCLUDES := $(PROJECT_INCLUDES)
+CFLAGS   := $(IGD_DEBUG) $(BUILD_OPTS) $(CFLAGS) $(PROJECT_BUILD_OPTS)
+
+ifeq ($(origin PROJECT_SONAME), file)
+LDFLAGS := $(LDFLAGS) -Wl,-soname,$(PROJECT_SONAME)
+endif
+ifeq ($(origin PROJECT_RPATH), file)
+LDFLAGS := $(LDFLAGS) -Wl,--rpath,$(PROJECT_RPATH)
+endif
+
+DEPENDS  := $(PROJECT_DEPENDS)
