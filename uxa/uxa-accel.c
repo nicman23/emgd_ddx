@@ -27,7 +27,7 @@
  *    Michel Dänzer <michel@tungstengraphics.com>
  *
  */
-
+#include <xorg-server.h>
 #ifdef HAVE_DIX_CONFIG_H
 #include <dix-config.h>
 #endif

@@ -717,7 +717,7 @@ static void intel_uxa_finish_access(PixmapPtr pixmap, uxa_access_t access)
 {
 	struct intel_pixmap *priv;
 
-	if (access == UXA_GLAMOR_ACCESS_RW || access == UXA_GLAMOR_ACCESS_RO)
+	if (access == UXA_ACCESS_RW || access == UXA_ACCESS_RO)
 		return;
 
 	priv = intel_get_pixmap_private(pixmap);

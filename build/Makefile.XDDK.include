@@ -103,6 +103,10 @@ export XDDK_TYPE := $(shell awk ' BEGIN {  \
 	snap = int($(VERSION) % 1000); \
 	print "Xorg-xserver-" major "." minor "." patch "." snap; \
 	}')
+
+endif
+endif
+
 export XDDK_VERSION_INCLUDE = \
 	-DXORG_VERSION_CURRENT=$(VERSION) \
 	-DCOMPOSITE \
@@ -111,10 +115,6 @@ export XDDK_VERSION_INCLUDE = \
 	-DRENDER \
 	-DXV \
 	-DXSERVER_LIBPCIACCESS=1 \
-
-endif
-endif
-
 
 ###########################################################################
 #

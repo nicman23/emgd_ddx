@@ -31,6 +31,7 @@
 #define PER_MODULE_DEBUG
 #define MODULE_NAME ial.overlay
 
+#include <xorg-server.h>
 #include <xf86Crtc.h>
 #include <xvdix.h>
 
@@ -328,19 +329,6 @@ emgd_sprite_t * emgd_sprite_grab(emgd_priv_t *iptr, DrawablePtr drawable,
 			/* Get the Xv ScreenInfo pointer */
 			pxvs = dixLookupPrivate(&pScreen->devPrivates, XvScreenIndex);
 
-			/* Query for adaptor list */
-			pxvs->ddQueryAdaptors(pScreen, &adaptors, &cnt);
-
-			for(i = 0; i < cnt; i++){
-				if(strcmp(adaptors[i].name, "EMGD Video Using Overlay") == 0){
-					if(adaptors[i].pPorts->grab.client == NULL && 
-							adaptors[i].pPorts->grab.id != XV_IN_USE_ID) {
-						adaptors[i].pPorts->grab.client = client;
-						adaptors[i].pPorts->grab.id = XV_IN_USE_ID;
-					}
-				}
-
-			}
 		}
 	
 	}
@@ -411,21 +399,6 @@ void emgd_sprite_ungrab(ScreenPtr screen, emgd_priv_t *iptr,
 				/* Get the Xv ScreenInfo pointer */
 				pxvs = dixLookupPrivate(&pScreen->devPrivates, XvScreenIndex);
 			
-				/* Query for adaptor list */
-				pxvs->ddQueryAdaptors(pScreen, &adaptors, &cnt);
-			
-				/* Search list for our overlay adaptor */
-				for(i=0; i < cnt; i++){
-					/* This is bad, looking for it by name. But how else? */
-					if(strcmp(adaptors[i].name, "EMGD Video Using Overlay") == 0){
-						if((adaptors[i].pPorts->grab.client != NULL) &&
-						   (client != NULL) &&
-						   (adaptors[i].pPorts->grab.id == XV_IN_USE_ID)){
-							adaptors[i].pPorts->grab.id = 0;
-							adaptors[i].pPorts->grab.client = NULL;
-						}	 
-					}
-				}
 			}
 		}	
 	}

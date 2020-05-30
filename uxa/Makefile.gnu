@@ -34,6 +34,7 @@ SOURCES = uxa.c \
 
 BUILD_DEPENDENCIES = \
 	pixman-1 \
+  xorg-server \
 	libdrm
 
 PROJECT_INCLUDES = \

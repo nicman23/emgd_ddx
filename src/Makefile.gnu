@@ -77,12 +77,10 @@ HEADERS = emgd.h       \
 # provided in a nonstandard location.
 #
 BUILD_DEPENDENCIES = \
-  xorg-server \
-	pixman-1 \
-	xcomposite \
-	xpm \
 	libdrm \
-	xproto
+	pixman-1 \
+  xorg-server \
+  xcomposite
 
 #
 # EMGD-internal header file locations
@@ -97,7 +95,8 @@ PROJECT_INCLUDES = \
 	$(EGD_ROOT)/include/os \
 	$(EGD_ROOT)/include/shared \
 	$(EGD_ROOT)/uxa \
-	$(EGD_ROOT)/src/render_program 
+	$(EGD_ROOT)/src/render_program \
+  /usr/include/X11/extensions/
 
 PROJECT_OUTPUT_PATH := $(EGD_ROOT)/src
 PROJECT_BUILD_XDRIVER = 1

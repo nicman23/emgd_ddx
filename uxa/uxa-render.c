@@ -22,6 +22,7 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
+#include <xorg-server.h>
 #ifdef HAVE_DIX_CONFIG_H
 #include <dix-config.h>
 #endif

@@ -67,9 +67,7 @@
 #define OFF_TIMER 0x01
 #define CLIENT_VIDEO_ON 0x02
 
-#ifdef COMPOSITE
 void DamageDamageRegion(DrawablePtr pDrawable, const RegionPtr pRegion);
-#endif
 
 static XF86VideoEncodingRec XvOverlayEncoding[4] = {
 	{ 0,

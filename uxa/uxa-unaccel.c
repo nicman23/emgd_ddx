@@ -21,6 +21,7 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
+#include <xorg-server.h>
 #include "uxa-priv.h"
 
 #ifdef RENDER

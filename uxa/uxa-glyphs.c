@@ -58,6 +58,7 @@
  * Based on code by: Keith Packard <keithp@keithp.com> and Owen Taylor <otaylor@fishsoup.net>
  */
 
+#include <xorg-server.h>
 #ifdef HAVE_DIX_CONFIG_H
 #include <dix-config.h>
 #endif

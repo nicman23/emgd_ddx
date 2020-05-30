@@ -44,8 +44,6 @@
 #include "brw_defines.h"
 #include "brw_structs.h"
 #include <string.h>
-#include "/usr/include/X11/extensions/Xcomposite.h"
-
 
 /* Make assert() work. */
 #undef NDEBUG
@@ -1251,13 +1249,8 @@ I965DisplayVideoTextured(ScrnInfoPtr scrn,
 	/* Set up the offset for translating from the given region (in screen
 	 * coordinates) to the backing pixmap.
 	 */
-#ifdef COMPOSITE
-	pix_xoff = -pixmap->screen_x + pixmap->drawable.x;
-	pix_yoff = -pixmap->screen_y + pixmap->drawable.y;
-#else
 	pix_xoff = 0;
 	pix_yoff = 0;
-#endif
 
 	dxo = dstRegion->extents.x1;
 	dyo = dstRegion->extents.y1;
@@ -1912,13 +1905,8 @@ void Gen6DisplayVideoTextured(ScrnInfoPtr scrn,
 	/* Set up the offset for translating from the given region (in screen
 	 * coordinates) to the backing pixmap.
 	 */
-#ifdef COMPOSITE
-	pix_xoff = -pixmap->screen_x + pixmap->drawable.x;
-	pix_yoff = -pixmap->screen_y + pixmap->drawable.y;
-#else
 	pix_xoff = 0;
 	pix_yoff = 0;
-#endif
 
 	dxo = dstRegion->extents.x1;
 	dyo = dstRegion->extents.y1;

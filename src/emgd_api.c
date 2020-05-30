@@ -51,7 +51,7 @@
 #include <xf86xv.h>
 #include <scrnintstr.h>
 #include <windowstr.h>
-#include <pixmapstr.h>
+#include "pixmapstr.h"
 #include <extnsionst.h>
 #include <dixstruct.h>
 #include "emgd.h"
