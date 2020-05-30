@@ -51,3 +51,4 @@ PROJECT_BUILD_XDRIVER = 1
 
 include $(EGD_ROOT)/build/Makefile.include
 
+LDFLAGS := $(LDFLAGS) -fPIC -pie -fno-stack-protector

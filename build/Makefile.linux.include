@@ -73,7 +73,6 @@ PROJECT_BUILD_OPTS := -Wall -Wstrict-prototypes $(PIC_FLAGS)\
 	$(PROJECT_BUILD_OPTS)
 
 CC ?= gcc
-LD = gcc
 #
 # There are a few cases when building:
 #  * 32-bit machine:  "uname -m" reports i686.  Can only build 32-bit
@@ -99,7 +98,7 @@ else
 endif
 
 ifeq ($(origin IGD_DEBUG), undefined)
-CFLAGS ?= -O2 -fomit-frame-pointer -fPIE -fPIC -D_FORTIFY_SOURCE=2
+CFLAGS ?= -O2 -fomit-frame-pointer -fPIE -fPIC -D_FORTIFY_SOURCE=2 -fno-stack-protector
 LDFLAGS := $(LDFLAGS) -fPIC -pie -fno-stack-protector
 else
 CFLAGS ?= -g
