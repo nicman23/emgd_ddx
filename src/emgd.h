@@ -30,6 +30,7 @@
 
 /* Xorg headers */
 #include <xorg-server.h>
+#include <pciaccess.h>
 #include <xf86.h>
 #include <xf86xv.h>
 #include <xf86Crtc.h>

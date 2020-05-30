@@ -29,11 +29,16 @@ export EGD_PKG ?= $(EGD_ROOT)/$(EGD_PKG_EXT)
 
 export EGD_TOPLEVEL = X Driver
 
+export XFREE=/usr/include/xorg/
+
 # Determine the version and build numbers
 BUILDNUM=$(shell grep BUILD_NUM     ddx_version.h | awk '{ print $$3 }')
 MAJORNUM=$(shell grep IGD_MAJOR_NUM ddx_version.h | awk '{ print $$3 }')
 MINORNUM=$(shell grep IGD_MINOR_NUM ddx_version.h | awk '{ print $$3 }')
 RELEASENUM="$(IGD_MAJOR_NUM).$(IGD_MINOR_NUM)"
+
+KERNELVER= $(shell uname -r)
+KERNELDIR= /lib/modules/$(KERNELVER)/build
 
 SOURCES = emgd_ddx.c  \
 		  emgd_options.c \
@@ -72,7 +77,10 @@ HEADERS = emgd.h       \
 # provided in a nonstandard location.
 #
 BUILD_DEPENDENCIES = \
+  xorg-server \
 	pixman-1 \
+	xcomposite \
+	xpm \
 	libdrm \
 	xproto
 
@@ -80,6 +88,8 @@ BUILD_DEPENDENCIES = \
 # EMGD-internal header file locations
 #
 PROJECT_INCLUDES = \
+  $(KERNELDIR)/include/uapi \
+  $(KERNELDIR)/include/ \
 	$(EGD_ROOT)/include \
 	$(EGD_ROOT)/include/oal \
 	$(EGD_ROOT)/include/drv \
@@ -87,16 +97,12 @@ PROJECT_INCLUDES = \
 	$(EGD_ROOT)/include/os \
 	$(EGD_ROOT)/include/shared \
 	$(EGD_ROOT)/uxa \
-	$(EGD_ROOT)/src/render_program
+	$(EGD_ROOT)/src/render_program 
 
 PROJECT_OUTPUT_PATH := $(EGD_ROOT)/src
 PROJECT_BUILD_XDRIVER = 1
 
 NOSTDLIB=-nostdlib
-
-CFLAGS := $(CFLAGS) -g -fprofile-arcs -ftest-coverage  -I/usr/include/xorg/ -I/usr/lib/modules/build/include/uapi/ -I/usr/lib/modules/build/include/
-LDFLAGS := $(LDFLAGS) -fprofile-arcs -ftest-coverage 
-NOSTDLIB := 
 
 include $(EGD_ROOT)/build/Makefile.include
 
@@ -141,18 +147,3 @@ install::
 package::
 	mkdir -p $(EGD_PKG)/driver/$(XDDK_TYPE)
 	$(MAKE) EGD_INS=$(EGD_PKG)/driver/$(XDDK_TYPE) install
-
-rpm:: $(EGD_DRV)
-	@if [ -f "$(EGD_SPEC)" ]; then \
-		perl -pi -e 's/^Release:\s+\d+$$/Release:\t$(BUILDNUM)/' $(EGD_SPEC); \
-		mkdir -p rpmbuild/{SOURCES,BUILD,BUILDROOT,SRPMS,RPMS}; \
-		mkdir -p $(EGD_PKG); \
-		cp $(EGD_DRV) rpmbuild/SOURCES; \
-		cp $(EGD_ROOT)/tools/build_emgddrm rpmbuild/SOURCES; \
-		tar --exclude-vcs --exclude=.* --transform=s/egd_drm/emgd_drm/ -C $(EGD_BASE) -czf $(EGD_ROOT)/src/rpmbuild/SOURCES/emgd_drm.tgz emgd_drm; \
-		rpmbuild --quiet -ba $(EGD_SPEC); \
-		mv rpmbuild/RPMS/*/*.rpm $(EGD_PKG); \
-		rm -rf rpmbuild; \
-	else \
-		echo -e "$(RED)Spec file '$(EGD_SPEC)' does not exist!$(OFF)"; \
-	fi

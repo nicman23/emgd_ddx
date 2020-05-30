@@ -44,6 +44,7 @@
 #include "brw_defines.h"
 #include "brw_structs.h"
 #include <string.h>
+#include "/usr/include/X11/extensions/Xcomposite.h"
 
 
 /* Make assert() work. */

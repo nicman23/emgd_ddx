@@ -46,9 +46,9 @@
 # For building the easiest way is to just point XFREE at any type
 # of sources and this makefile will figure it out.
 ############################################################################
-ifeq  ($(origin XFREE), undefined)
-	$(error No XFREE specified!)
-endif
+#ifeq  ($(origin XFREE), undefined)
+#$(error No XFREE specified!)
+#endif
 
 ###########################################################################
 # XORG_VERSION_CURRENT is defined in xorg-server.h, which is

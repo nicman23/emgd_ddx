@@ -1235,7 +1235,7 @@ _X_EXPORT DriverRec emgd_ddx = {
 	NULL,
 	0,
 	emgd_ddx_driver_func,
-#if XSERVER_LIBPCIACCESS
+#ifdef XSERVER_LIBPCIACCESS
 	emgd_device_match,
 	emgd_pci_probe
 #endif
